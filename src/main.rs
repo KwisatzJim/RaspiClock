@@ -51,6 +51,7 @@ struct DailyWeather {
 struct RaspiClock {
     weather: Option<CurrentWeather>,
     config: Option<Config>,
+    display_position: u8,
 }
 
 fn main() -> iced::Result {
@@ -67,6 +68,7 @@ fn boot() -> RaspiClock {
     RaspiClock {
         weather,
         config,
+        display_position: 0,
     }
 }
 
@@ -74,11 +76,16 @@ fn boot() -> RaspiClock {
 enum Message {
     Tick,
     RefreshWeather,
+    ShiftDisplay,
 }
 
 fn update(state: &mut RaspiClock, message: Message) {
     match message {
         Message::Tick => {}
+
+        Message::ShiftDisplay => {
+            state.display_position = (state.display_position +1) % 4;
+        }
 
         Message::RefreshWeather => {
             if let Some(config) = &state.config {
@@ -92,6 +99,33 @@ fn update(state: &mut RaspiClock, message: Message) {
 
 fn view(_state: &RaspiClock) -> iced::Element<'_, Message> {
     let now = Local::now();
+
+    let display_padding = match _state.display_position {
+        0 => iced::Padding {
+            top: 18.0,
+            right: 18.0,
+            bottom: 22.0,
+            left: 22.0,
+        },
+        1 => iced::Padding {
+            top: 18.0,
+            right: 22.0,
+            bottom: 22.0,
+            left: 18.0,
+        },
+        2 => iced::Padding {
+            top: 22.0,
+            right: 22.0,
+            bottom: 18.0,
+            left: 18.0,
+        },
+        _ => iced::Padding {
+            top: 22.0,
+            right: 18.0,
+            bottom: 18.0,
+            left: 22.0,
+        },
+    };
 
     let current_time = now.format("%-I:%M").to_string();
     let am_pm = now.format("%p").to_string();
@@ -228,7 +262,7 @@ iced::widget::container(
 )
 .width(iced::Length::Fill)
 .height(iced::Length::Fill)
-.padding(20)
+.padding(display_padding)
 .style(|_| iced::widget::container::Style {
     background: Some(iced::Background::Color(
         iced::Color::from_rgb8(15, 23, 42)
@@ -246,9 +280,13 @@ fn subscription(_state: &RaspiClock) -> iced::Subscription<Message> {
     let weather = iced::time::every(Duration::from_secs(15 * 60))
         .map(|_| Message::RefreshWeather);
 
+    let burn_in = iced::time::every(Duration::from_secs(5 * 60))
+    .map(|_| Message::ShiftDisplay);
+
     iced::Subscription::batch([
         clock,
         weather,
+        burn_in,
     ])
 }
 
