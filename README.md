@@ -99,4 +99,74 @@ To stop Cage from another terminal or SSH session:
 pkill cage
 ```
 
+## Automatic Startup
+
+RaspiClock can start automatically on the Raspberry Pi's physical console using Raspberry Pi OS Console Autologin and Fish.
+
+This method has an important advantage: Cage starts from a real `seat0`/`tty1` login session, giving it access to the display and input devices while SSH remains available for remote administration.
+
+### 1. Enable Console Autologin
+
+Run:
+
+```bash
+sudo raspi-config
+```
+
+Enable console autologin for the user that will run RaspiClock.
+
+After rebooting, the Raspberry Pi should automatically log that user in on `tty1`.
+
+### 2. Configure Fish to launch RaspiClock
+
+Add the following inside the `if status is-interactive` block in:
+
+```text
+~/.config/fish/config.fish
+```
+
+```fish
+if test "$TERM" = "linux"
+    exec /usr/bin/cage -- /home/jim/RaspiClock/target/release/raspiclock
+end
+```
+
+Replace `/home/jim/RaspiClock` with the location where you cloned RaspiClock.
+
+The `$TERM = "linux"` check restricts the automatic launch to the local Linux console. SSH sessions normally use a different terminal type, so connecting over SSH will not start another copy of RaspiClock.
+
+### 3. Reboot
+
+Build the release executable before rebooting:
+
+```bash
+cargo build --release
+```
+
+Then reboot:
+
+```bash
+sudo reboot
+```
+
+After console autologin, Fish should automatically start Cage and RaspiClock.
+
+### Remote Recovery
+
+SSH remains available while RaspiClock is running.
+
+To stop Cage and return to the console:
+
+```bash
+pkill cage
+```
+
+Because Fish launches RaspiClock whenever a new interactive `tty1` Fish session starts, starting another Fish shell on that console will launch RaspiClock again.
+
+To temporarily disable automatic startup, comment out or remove the RaspiClock block from:
+
+```text
+~/.config/fish/config.fish
+```
+
 
