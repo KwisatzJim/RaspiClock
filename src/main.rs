@@ -3,6 +3,28 @@ use chrono::Local;
 use std::time::Duration;
 
 #[derive(serde::Deserialize)]
+struct Config {
+    latitude: f64,
+    longitude: f64,
+    timezone: String,
+}
+
+fn load_config() -> Option<Config> {
+    let config_dir = std::env::var("XDG_CONFIG_HOME")
+        .ok()
+        .or_else(|| {
+            std::env::var("HOME")
+                .ok()
+                .map(|home| format!("{home}/.config"))
+        })?;
+
+    let config_path = format!("{config_dir}/raspiclock/config.toml");
+
+    let contents = std::fs::read_to_string(config_path).ok()?;
+    toml::from_str(&contents).ok()
+}
+
+#[derive(serde::Deserialize)]
 struct WeatherResponse {
     current: CurrentWeather,
     daily: DailyWeather,
@@ -28,6 +50,7 @@ struct DailyWeather {
 
 struct RaspiClock {
     weather: Option<CurrentWeather>,
+    config: Option<Config>,
 }
 
 fn main() -> iced::Result {
@@ -38,8 +61,12 @@ fn main() -> iced::Result {
 }
 
 fn boot() -> RaspiClock {
+    let config = load_config();
+    let weather = config.as_ref().and_then(fetch_weather);
+
     RaspiClock {
-        weather: fetch_weather(),
+        weather,
+        config,
     }
 }
 
@@ -54,8 +81,10 @@ fn update(state: &mut RaspiClock, message: Message) {
         Message::Tick => {}
 
         Message::RefreshWeather => {
-            if let Some(weather) = fetch_weather() {
-                state.weather = Some(weather);
+            if let Some(config) = &state.config {
+                if let Some(weather) = fetch_weather(config) {
+                   state.weather = Some(weather);
+                }
             }
         }
     }
@@ -252,10 +281,15 @@ fn active_network_interface() -> Option<String> {
     parts.get(dev_position + 1).map(|interface| interface.to_string())
 }
 
-fn fetch_weather() -> Option<CurrentWeather> {
-    let url = "https://api.open-meteo.com/v1/forecast?latitude=30.27&longitude=-97.74&current=temperature_2m,weather_code&daily=sunrise,sunset&temperature_unit=fahrenheit&timezone=America%2FChicago";
+fn fetch_weather(config: &Config) -> Option<CurrentWeather> {
+    let url = format!(
+        "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m,weather_code&daily=sunrise,sunset&temperature_unit=fahrenheit&timezone={}",
+        config.latitude,
+        config.longitude,
+        config.timezone,
+    );
 
-    let response = reqwest::blocking::get(url)
+    let response = reqwest::blocking::get(&url)
         .ok()?
         .error_for_status()
         .ok()?

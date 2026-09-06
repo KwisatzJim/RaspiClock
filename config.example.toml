@@ -1,0 +1,8 @@
+# RaspiClock location configuration
+#
+# Replace these values with the latitude, longitude,
+# and IANA timezone for your location.
+
+latitude = 30.27
+longitude = -97.74
+timezone = "America/Chicago"

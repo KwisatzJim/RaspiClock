@@ -24,6 +24,36 @@ RaspiClock is currently developed and tested on:
 - Raspberry Pi OS Lite / Debian 13
 - Cage Wayland kiosk compositor
 
+## Configuration
+
+RaspiClock reads its configuration from:
+
+```text
+~/.config/raspiclock/config.toml
+```
+
+Create the configuration directory:
+
+```bash
+mkdir -p ~/.config/raspiclock
+```
+
+Copy the example configuration:
+
+```bash
+cp config.example.toml ~/.config/raspiclock/config.toml
+```
+
+Then edit the configuration for your location:
+
+```toml
+latitude = 30.27
+longitude = -97.74
+timezone = "America/Chicago"
+```
+
+Set `latitude` and `longitude` to your location and use the appropriate IANA timezone name.
+
 ## Building
 
 RaspiClock requires a working Rust toolchain.
