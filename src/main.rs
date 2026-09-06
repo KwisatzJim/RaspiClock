@@ -236,41 +236,44 @@ fn view(_state: &RaspiClock) -> iced::Element<'_, Message> {
     .spacing(24)
     .align_x(iced::Alignment::Center);
 
-iced::widget::container(
-    iced::widget::row![
-        iced::widget::container(clock_panel)
-            .width(iced::Length::FillPortion(3))
-            .center_x(iced::Length::Fill)
-            .center_y(iced::Length::Fill),
-        iced::widget::container("")
-            .width(1)
-            .height(iced::Length::Fill)
-            .style(|_| iced::widget::container::Style {
-                background: Some(iced::Background::Color(
-                    iced::Color::from_rgb8(51, 65, 85)
-                )),
-                ..Default::default()
-            }),
+iced::widget::mouse_area(
+    iced::widget::container(
+        iced::widget::row![
+            iced::widget::container(clock_panel)
+                .width(iced::Length::FillPortion(3))
+                .center_x(iced::Length::Fill)
+                .center_y(iced::Length::Fill),
+            iced::widget::container("")
+                .width(1)
+                .height(iced::Length::Fill)
+                .style(|_| iced::widget::container::Style {
+                    background: Some(iced::Background::Color(
+                        iced::Color::from_rgb8(51, 65, 85)
+                    )),
+                    ..Default::default()
+                }),
 
-        iced::widget::container(info_panel)
-            .width(iced::Length::FillPortion(2))
-            .center_x(iced::Length::Fill)
-            .center_y(iced::Length::Fill),
-    ]
+            iced::widget::container(info_panel)
+                .width(iced::Length::FillPortion(2))
+                .center_x(iced::Length::Fill)
+                .center_y(iced::Length::Fill),
+        ]
+        .width(iced::Length::Fill)
+        .height(iced::Length::Fill)
+    )
     .width(iced::Length::Fill)
     .height(iced::Length::Fill)
-)
-.width(iced::Length::Fill)
-.height(iced::Length::Fill)
-.padding(display_padding)
-.style(|_| iced::widget::container::Style {
-    background: Some(iced::Background::Color(
-        iced::Color::from_rgb8(15, 23, 42)
-    )),
-    text_color: Some(iced::Color::WHITE),
-    ..Default::default()
-})
-.into()
+    .padding(display_padding)
+    .style(|_| iced::widget::container::Style {
+        background: Some(iced::Background::Color(
+            iced::Color::from_rgb8(15, 23, 42)
+        )),
+        text_color: Some(iced::Color::WHITE),
+        ..Default::default()
+    })
+    )
+    .interaction(iced::mouse::Interaction::Hidden)
+    .into()
 }
 
 fn subscription(_state: &RaspiClock) -> iced::Subscription<Message> {
