@@ -4,6 +4,9 @@ RaspiClock is a full-screen clock and information dashboard for Raspberry Pi, wr
 
 It is designed for small displays and runs directly under Wayland without requiring a full desktop environment.
 
+<img width="1280" height="842" alt="IMG_2401" src="https://github.com/user-attachments/assets/ca7f96b6-722a-47dd-b790-acd5a528f570" />
+
+
 ## Current Features
 
 - Large 12-hour clock with AM/PM
