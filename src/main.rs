@@ -1,5 +1,5 @@
-use iced::widget::text;
 use chrono::Local;
+use iced::widget::text;
 use std::time::Duration;
 
 #[derive(serde::Deserialize)]
@@ -10,13 +10,11 @@ struct Config {
 }
 
 fn load_config() -> Option<Config> {
-    let config_dir = std::env::var("XDG_CONFIG_HOME")
-        .ok()
-        .or_else(|| {
-            std::env::var("HOME")
-                .ok()
-                .map(|home| format!("{home}/.config"))
-        })?;
+    let config_dir = std::env::var("XDG_CONFIG_HOME").ok().or_else(|| {
+        std::env::var("HOME")
+            .ok()
+            .map(|home| format!("{home}/.config"))
+    })?;
 
     let config_path = format!("{config_dir}/raspiclock/config.toml");
 
@@ -84,13 +82,13 @@ fn update(state: &mut RaspiClock, message: Message) {
         Message::Tick => {}
 
         Message::ShiftDisplay => {
-            state.display_position = (state.display_position +1) % 4;
+            state.display_position = (state.display_position + 1) % 4;
         }
 
         Message::RefreshWeather => {
             if let Some(config) = &state.config {
                 if let Some(weather) = fetch_weather(config) {
-                   state.weather = Some(weather);
+                    state.weather = Some(weather);
                 }
             }
         }
@@ -149,46 +147,39 @@ fn view(_state: &RaspiClock) -> iced::Element<'_, Message> {
         iced::Color::from_rgb8(248, 113, 113)
     };
 
-    let (weather_temp, weather_condition) = match &_state.weather {
+    let (weather_temp, weather_condition, weather_icon) = match &_state.weather {
         Some(weather) => (
             format!("{:.0}°F", weather.temperature_2m),
             weather_description(weather.weather_code).to_string(),
+            weather_icon(weather.weather_code),
         ),
-        None => (
-            "--°F".to_string(),
-            "Weather unavailable".to_string(),
-        ),
+        None => ("--°F".to_string(), "Weather unavailable".to_string(), "?"),
     };
 
     let (sunrise, sunset) = match &_state.weather {
         Some(weather) => (
-            weather.sunrise
+            weather
+                .sunrise
                 .as_deref()
                 .and_then(format_sun_time)
                 .unwrap_or_else(|| "--".to_string()),
-
-            weather.sunset
+            weather
+                .sunset
                 .as_deref()
                 .and_then(format_sun_time)
                 .unwrap_or_else(|| "--".to_string()),
         ),
-        None => (
-            "--".to_string(),
-            "--".to_string(),
-        ),
+        None => ("--".to_string(), "--".to_string()),
     };
 
-    let time_row = iced::widget::row![
-        text(current_time).size(88),
-        text(am_pm).size(36),
-    ]
-        .spacing(8)
+    let time_row = iced::widget::row![text(current_time).size(132), text(am_pm).size(48),]
+        .spacing(12)
         .align_y(iced::Alignment::End);
 
     let clock_panel = iced::widget::column![
         time_row,
-        text(current_day).size(36),
-        text(current_date).size(36),
+        text(current_day).size(48),
+        text(current_date).size(48),
     ]
     .spacing(12)
     .align_x(iced::Alignment::Center);
@@ -198,7 +189,6 @@ fn view(_state: &RaspiClock) -> iced::Element<'_, Message> {
             .size(28)
             .color(iced::Color::from_rgb8(250, 204, 21)),
         text(sunrise).size(28),
-
         text("↓")
             .size(28)
             .color(iced::Color::from_rgb8(251, 146, 60)),
@@ -211,93 +201,82 @@ fn view(_state: &RaspiClock) -> iced::Element<'_, Message> {
         .width(iced::Length::Fill)
         .height(1)
         .style(|_| iced::widget::container::Style {
-            background: Some(iced::Background::Color(
-                iced::Color::from_rgb8(51, 65, 85)
-            )),
+            background: Some(iced::Background::Color(iced::Color::from_rgb8(51, 65, 85))),
             ..Default::default()
         });
-
-    let info_panel = iced::widget::column![
-        text(weather_temp)
-            .size(56)
-            .color(iced::Color::from_rgb8(250, 204, 21)),
+    let weather_condition_row = iced::widget::row![
+        iced::widget::svg(weather_icon).width(40).height(40),
         text(weather_condition)
             .size(32)
             .color(iced::Color::from_rgb8(203, 213, 225)),
+    ]
+    .spacing(10)
+    .align_y(iced::Alignment::Center);
+
+    let info_panel = iced::widget::column![
+        text(weather_temp)
+            .size(76)
+            .color(iced::Color::from_rgb8(250, 204, 21)),
+        weather_condition_row,
         sun_row,
         info_divider,
         text(cpu_temp)
             .size(42)
             .color(iced::Color::from_rgb8(56, 189, 248)),
-        text(network_status)
-            .size(32)
-            .color(network_color),
+        text(network_status).size(32).color(network_color),
     ]
     .spacing(24)
     .align_x(iced::Alignment::Center);
 
-iced::widget::mouse_area(
-    iced::widget::container(
-        iced::widget::row![
-            iced::widget::container(clock_panel)
-                .width(iced::Length::FillPortion(3))
-                .center_x(iced::Length::Fill)
-                .center_y(iced::Length::Fill),
-            iced::widget::container("")
-                .width(1)
-                .height(iced::Length::Fill)
-                .style(|_| iced::widget::container::Style {
-                    background: Some(iced::Background::Color(
-                        iced::Color::from_rgb8(51, 65, 85)
-                    )),
-                    ..Default::default()
-                }),
-
-            iced::widget::container(info_panel)
-                .width(iced::Length::FillPortion(2))
-                .center_x(iced::Length::Fill)
-                .center_y(iced::Length::Fill),
-        ]
+    iced::widget::mouse_area(
+        iced::widget::container(
+            iced::widget::row![
+                iced::widget::container(clock_panel)
+                    .width(iced::Length::FillPortion(3))
+                    .center_x(iced::Length::Fill)
+                    .center_y(iced::Length::Fill),
+                iced::widget::container("")
+                    .width(1)
+                    .height(iced::Length::Fill)
+                    .style(|_| iced::widget::container::Style {
+                        background: Some(iced::Background::Color(iced::Color::from_rgb8(
+                            51, 65, 85
+                        ))),
+                        ..Default::default()
+                    }),
+                iced::widget::container(info_panel)
+                    .width(iced::Length::FillPortion(2))
+                    .center_x(iced::Length::Fill)
+                    .center_y(iced::Length::Fill),
+            ]
+            .width(iced::Length::Fill)
+            .height(iced::Length::Fill),
+        )
         .width(iced::Length::Fill)
         .height(iced::Length::Fill)
-    )
-    .width(iced::Length::Fill)
-    .height(iced::Length::Fill)
-    .padding(display_padding)
-    .style(|_| iced::widget::container::Style {
-        background: Some(iced::Background::Color(
-            iced::Color::from_rgb8(15, 23, 42)
-        )),
-        text_color: Some(iced::Color::WHITE),
-        ..Default::default()
-    })
+        .padding(display_padding)
+        .style(|_| iced::widget::container::Style {
+            background: Some(iced::Background::Color(iced::Color::from_rgb8(15, 23, 42))),
+            text_color: Some(iced::Color::WHITE),
+            ..Default::default()
+        }),
     )
     .interaction(iced::mouse::Interaction::Hidden)
     .into()
 }
 
 fn subscription(_state: &RaspiClock) -> iced::Subscription<Message> {
-    let clock = iced::time::every(Duration::from_secs(1))
-        .map(|_| Message::Tick);
+    let clock = iced::time::every(Duration::from_secs(1)).map(|_| Message::Tick);
 
-    let weather = iced::time::every(Duration::from_secs(15 * 60))
-        .map(|_| Message::RefreshWeather);
+    let weather = iced::time::every(Duration::from_secs(15 * 60)).map(|_| Message::RefreshWeather);
 
-    let burn_in = iced::time::every(Duration::from_secs(5 * 60))
-    .map(|_| Message::ShiftDisplay);
+    let burn_in = iced::time::every(Duration::from_secs(5 * 60)).map(|_| Message::ShiftDisplay);
 
-    iced::Subscription::batch([
-        clock,
-        weather,
-        burn_in,
-    ])
+    iced::Subscription::batch([clock, weather, burn_in])
 }
 
 fn cpu_temperature() -> Option<f32> {
-    let raw = std::fs::read_to_string(
-        "/sys/class/thermal/thermal_zone0/temp",
-    )
-        .ok()?;
+    let raw = std::fs::read_to_string("/sys/class/thermal/thermal_zone0/temp").ok()?;
 
     let millidegrees: f32 = raw.trim().parse().ok()?;
 
@@ -319,15 +298,15 @@ fn active_network_interface() -> Option<String> {
 
     let dev_position = parts.iter().position(|part| *part == "dev")?;
 
-    parts.get(dev_position + 1).map(|interface| interface.to_string())
+    parts
+        .get(dev_position + 1)
+        .map(|interface| interface.to_string())
 }
 
 fn fetch_weather(config: &Config) -> Option<CurrentWeather> {
     let url = format!(
         "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m,weather_code&daily=sunrise,sunset&temperature_unit=fahrenheit&timezone={}",
-        config.latitude,
-        config.longitude,
-        config.timezone,
+        config.latitude, config.longitude, config.timezone,
     );
 
     let response = reqwest::blocking::get(&url)
@@ -366,9 +345,28 @@ fn weather_description(code: u8) -> &'static str {
     }
 }
 
+fn weather_icon(code: u8) -> &'static str {
+    match code {
+        0 => "assets/weather/clear.svg",
+        1 => "assets/weather/mostly-clear.svg",
+        2 => "assets/weather/partly-cloudy.svg",
+        3 => "assets/weather/cloudy.svg",
+        45 | 48 => "assets/weather/fog.svg",
+        51 | 53 | 55 => "assets/weather/rain.svg",
+        56 | 57 => "assets/weather/rain.svg",
+        61 | 63 | 65 => "assets/weather/rain.svg",
+        66 | 67 => "assets/weather/rain.svg",
+        80 | 81 | 82 => "assets/weather/rain.svg",
+        71 | 73 | 75 => "assets/weather/snow.svg",
+        77 => "assets/weather/snow.svg",
+        85 | 86 => "assets/weather/snow.svg",
+        95 | 96 | 99 => "assets/weather/thunderstorm.svg",
+        _ => "assets/weather/unknown.svg",
+    }
+}
+
 fn format_sun_time(value: &str) -> Option<String> {
-    let datetime =
-        chrono::NaiveDateTime::parse_from_str(value, "%Y-%m-%dT%H:%M").ok()?;
+    let datetime = chrono::NaiveDateTime::parse_from_str(value, "%Y-%m-%dT%H:%M").ok()?;
 
     Some(datetime.format("%-I:%M %p").to_string())
 }

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+
+  <!-- Sun -->
+  <g stroke="#FACC15" stroke-width="4">
+    <circle cx="24" cy="23" r="9"></circle>
+    <path d="M24 5v6"></path>
+    <path d="M24 35v6"></path>
+    <path d="M6 23h6"></path>
+    <path d="M36 23h6"></path>
+    <path d="M11 10l5 5"></path>
+    <path d="M37 10l-5 5"></path>
+  </g>
+
+  <!-- Small cloud -->
+  <path d="M25 50h25
+           c6 0 10-4 10-9
+           s-4-9-10-9
+           c-1 0-2 0-3 0
+           c-2-6-7-9-13-9
+           c-7 0-12 5-13 12
+           c-5 1-8 4-8 8
+           c0 4 4 7 8 7h4" stroke="#CBD5E1" stroke-width="4"></path>
+</svg>

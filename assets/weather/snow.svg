@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+
+  <!-- Cloud -->
+  <path d="M14 35h35
+           c6 0 10-4 10-9
+           s-4-9-10-9
+           c-1 0-2 0-3 0
+           c-3-6-8-9-15-9
+           c-8 0-14 6-15 13
+           c-6 1-10 5-10 9
+           c0 3 3 5 8 5" stroke="#CBD5E1" stroke-width="4"></path>
+
+  <!-- Snowflakes -->
+  <g stroke="#7DD3FC" stroke-width="3">
+    <path d="M20 43v12"></path>
+    <path d="M15 49h10"></path>
+
+    <path d="M40 43v12"></path>
+    <path d="M35 49h10"></path>
+  </g>
+
+</svg>

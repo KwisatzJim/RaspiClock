@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 chrono = "0.4.45"
-iced = { version = "0.14.0", features = ["tokio"] }
+iced = { version = "0.14.0", features = ["tokio", "svg"] }
 reqwest = { version = "0.13.4", features = ["blocking", "json"] }
 serde = { version = "1.0.229", features = ["derive"] }
 toml = "1.1.5"

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+
+  <!-- Cloud -->
+  <path d="M14 34h35
+           c6 0 10-4 10-9
+           s-4-9-10-9
+           c-1 0-2 0-3 0
+           c-3-6-8-9-15-9
+           c-8 0-14 6-15 13
+           c-6 1-10 5-10 9
+           c0 3 3 5 8 5" stroke="#CBD5E1" stroke-width="4"></path>
+
+  <!-- Lightning -->
+  <path d="M35 38
+           L27 50
+           H34
+           L30 59
+           L44 45
+           H36
+           L42 38" stroke="#FACC15" stroke-width="4"></path>
+
+</svg>

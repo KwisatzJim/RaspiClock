@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cd /home/jim/RaspiClock || exit 1
+
 /usr/bin/cage -- /home/jim/RaspiClock/target/release/raspiclock &
 CAGE_PID=$!
 
