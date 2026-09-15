@@ -186,15 +186,15 @@ fn view(_state: &RaspiClock) -> iced::Element<'_, Message> {
 
     let sun_row = iced::widget::row![
         text("↑")
-            .size(28)
+            .size(36)
             .color(iced::Color::from_rgb8(250, 204, 21)),
-        text(sunrise).size(28),
+        text(sunrise).size(36),
         text("↓")
-            .size(28)
+            .size(36)
             .color(iced::Color::from_rgb8(251, 146, 60)),
-        text(sunset).size(28),
+        text(sunset).size(36),
     ]
-    .spacing(6)
+    .spacing(10)
     .align_y(iced::Alignment::Center);
 
     let info_divider = iced::widget::container("")
@@ -205,9 +205,9 @@ fn view(_state: &RaspiClock) -> iced::Element<'_, Message> {
             ..Default::default()
         });
     let weather_condition_row = iced::widget::row![
-        iced::widget::svg(weather_icon).width(40).height(40),
+        iced::widget::svg(weather_icon).width(64).height(64),
         text(weather_condition)
-            .size(32)
+            .size(48)
             .color(iced::Color::from_rgb8(203, 213, 225)),
     ]
     .spacing(10)
@@ -221,9 +221,9 @@ fn view(_state: &RaspiClock) -> iced::Element<'_, Message> {
         sun_row,
         info_divider,
         text(cpu_temp)
-            .size(42)
+            .size(48)
             .color(iced::Color::from_rgb8(56, 189, 248)),
-        text(network_status).size(32).color(network_color),
+        text(network_status).size(42).color(network_color),
     ]
     .spacing(24)
     .align_x(iced::Alignment::Center);
