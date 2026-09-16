@@ -2,7 +2,7 @@ use chrono::Local;
 use iced::widget::text;
 use std::time::Duration;
 
-#[derive(serde::Deserialize)]
+#[derive(Clone, serde::Deserialize)]
 struct Config {
     latitude: f64,
     longitude: f64,
@@ -28,7 +28,7 @@ struct WeatherResponse {
     daily: DailyWeather,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 struct CurrentWeather {
     temperature_2m: f32,
     weather_code: u8,
@@ -65,17 +65,20 @@ fn main() -> iced::Result {
         .run()
 }
 
-fn boot() -> RaspiClock {
+fn boot() -> (RaspiClock, iced::Task<Message>) {
     let config = load_config();
-    let weather = config.as_ref().and_then(fetch_weather);
+    let weather = None;
 
-    RaspiClock {
-        weather,
-        config,
-        display_position: 0,
-        window_width: 1280.0,
-        window_height: 720.0,
-    }
+    (
+        RaspiClock {
+            weather,
+            config,
+            display_position: 0,
+            window_width: 1280.0,
+            window_height: 720.0,
+        },
+        iced::Task::done(Message::RefreshWeather),
+    )
 }
 
 #[derive(Debug, Clone)]
@@ -84,9 +87,10 @@ enum Message {
     RefreshWeather,
     ShiftDisplay,
     WindowResized(f32, f32),
+    WeatherUpdated(Option<CurrentWeather>),
 }
 
-fn update(state: &mut RaspiClock, message: Message) {
+fn update(state: &mut RaspiClock, message: Message) -> iced::Task<Message> {
     match message {
         Message::Tick => {}
 
@@ -101,12 +105,22 @@ fn update(state: &mut RaspiClock, message: Message) {
 
         Message::RefreshWeather => {
             if let Some(config) = &state.config {
-                if let Some(weather) = fetch_weather(config) {
-                    state.weather = Some(weather);
-                }
+                let config = config.clone();
+
+                return iced::Task::perform(
+                    async move { fetch_weather(&config).await },
+                    Message::WeatherUpdated,
+                );
+            }
+        }
+        Message::WeatherUpdated(weather) => {
+            if let Some(weather) = weather {
+                state.weather = Some(weather);
             }
         }
     }
+
+    iced::Task::none()
 }
 
 fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
@@ -332,17 +346,19 @@ fn active_network_interface() -> Option<String> {
         .map(|interface| interface.to_string())
 }
 
-fn fetch_weather(config: &Config) -> Option<CurrentWeather> {
+async fn fetch_weather(config: &Config) -> Option<CurrentWeather> {
     let url = format!(
         "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m,weather_code&daily=sunrise,sunset&temperature_unit=fahrenheit&timezone={}",
         config.latitude, config.longitude, config.timezone,
     );
 
-    let response = reqwest::blocking::get(&url)
+    let response = reqwest::get(&url)
+        .await
         .ok()?
         .error_for_status()
         .ok()?
         .json::<WeatherResponse>()
+        .await
         .ok()?;
 
     let mut current = response.current;
