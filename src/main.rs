@@ -50,12 +50,18 @@ struct RaspiClock {
     weather: Option<CurrentWeather>,
     config: Option<Config>,
     display_position: u8,
+    window_width: f32,
+    window_height: f32,
 }
 
 fn main() -> iced::Result {
     iced::application(boot, update, view)
         .title("RaspiClock")
         .subscription(subscription)
+        .window(iced::window::Settings {
+            decorations: false,
+            ..Default::default()
+        })
         .run()
 }
 
@@ -67,6 +73,8 @@ fn boot() -> RaspiClock {
         weather,
         config,
         display_position: 0,
+        window_width: 1280.0,
+        window_height: 720.0,
     }
 }
 
@@ -75,6 +83,7 @@ enum Message {
     Tick,
     RefreshWeather,
     ShiftDisplay,
+    WindowResized(f32, f32),
 }
 
 fn update(state: &mut RaspiClock, message: Message) {
@@ -83,6 +92,11 @@ fn update(state: &mut RaspiClock, message: Message) {
 
         Message::ShiftDisplay => {
             state.display_position = (state.display_position + 1) % 4;
+        }
+
+        Message::WindowResized(width, height) => {
+            state.window_width = width;
+            state.window_height = height;
         }
 
         Message::RefreshWeather => {
@@ -95,33 +109,40 @@ fn update(state: &mut RaspiClock, message: Message) {
     }
 }
 
-fn view(_state: &RaspiClock) -> iced::Element<'_, Message> {
+fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
     let now = Local::now();
 
-    let display_padding = match _state.display_position {
+    let width_scale = state.window_width / 1280.0;
+    let height_scale = state.window_height / 720.0;
+    let scale = width_scale.min(height_scale);
+
+    let padding_small = 18.0 * scale;
+    let padding_large = 22.0 * scale;
+
+    let display_padding = match state.display_position {
         0 => iced::Padding {
-            top: 18.0,
-            right: 18.0,
-            bottom: 22.0,
-            left: 22.0,
+            top: padding_small,
+            right: padding_small,
+            bottom: padding_large,
+            left: padding_large,
         },
         1 => iced::Padding {
-            top: 18.0,
-            right: 22.0,
-            bottom: 22.0,
-            left: 18.0,
+            top: padding_small,
+            right: padding_large,
+            bottom: padding_large,
+            left: padding_small,
         },
         2 => iced::Padding {
-            top: 22.0,
-            right: 22.0,
-            bottom: 18.0,
-            left: 18.0,
+            top: padding_large,
+            right: padding_large,
+            bottom: padding_small,
+            left: padding_small,
         },
         _ => iced::Padding {
-            top: 22.0,
-            right: 18.0,
-            bottom: 18.0,
-            left: 22.0,
+            top: padding_large,
+            right: padding_small,
+            bottom: padding_small,
+            left: padding_large,
         },
     };
 
@@ -147,7 +168,7 @@ fn view(_state: &RaspiClock) -> iced::Element<'_, Message> {
         iced::Color::from_rgb8(248, 113, 113)
     };
 
-    let (weather_temp, weather_condition, weather_icon) = match &_state.weather {
+    let (weather_temp, weather_condition, weather_icon) = match &state.weather {
         Some(weather) => (
             format!("{:.0}°F", weather.temperature_2m),
             weather_description(weather.weather_code).to_string(),
@@ -156,7 +177,7 @@ fn view(_state: &RaspiClock) -> iced::Element<'_, Message> {
         None => ("--°F".to_string(), "Weather unavailable".to_string(), "?"),
     };
 
-    let (sunrise, sunset) = match &_state.weather {
+    let (sunrise, sunset) = match &state.weather {
         Some(weather) => (
             weather
                 .sunrise
@@ -172,29 +193,32 @@ fn view(_state: &RaspiClock) -> iced::Element<'_, Message> {
         None => ("--".to_string(), "--".to_string()),
     };
 
-    let time_row = iced::widget::row![text(current_time).size(132), text(am_pm).size(48),]
-        .spacing(12)
-        .align_y(iced::Alignment::End);
+    let time_row = iced::widget::row![
+        text(current_time).size(132.0 * scale),
+        text(am_pm).size(48.0 * scale),
+    ]
+    .spacing(12.0 * scale)
+    .align_y(iced::Alignment::End);
 
     let clock_panel = iced::widget::column![
         time_row,
-        text(current_day).size(48),
-        text(current_date).size(48),
+        text(current_day).size(48.0 * scale),
+        text(current_date).size(48.0 * scale),
     ]
-    .spacing(12)
+    .spacing(12.0 * scale)
     .align_x(iced::Alignment::Center);
 
     let sun_row = iced::widget::row![
         text("↑")
-            .size(36)
+            .size(36.0 * scale)
             .color(iced::Color::from_rgb8(250, 204, 21)),
-        text(sunrise).size(36),
+        text(sunrise).size(36.0 * scale),
         text("↓")
-            .size(36)
+            .size(36.0 * scale)
             .color(iced::Color::from_rgb8(251, 146, 60)),
-        text(sunset).size(36),
+        text(sunset).size(36.0 * scale),
     ]
-    .spacing(10)
+    .spacing(10.0 * scale)
     .align_y(iced::Alignment::Center);
 
     let info_divider = iced::widget::container("")
@@ -205,27 +229,29 @@ fn view(_state: &RaspiClock) -> iced::Element<'_, Message> {
             ..Default::default()
         });
     let weather_condition_row = iced::widget::row![
-        iced::widget::svg(weather_icon).width(64).height(64),
+        iced::widget::svg(weather_icon)
+            .width(64.0 * scale)
+            .height(64.0 * scale),
         text(weather_condition)
-            .size(48)
+            .size(48.0 * scale)
             .color(iced::Color::from_rgb8(203, 213, 225)),
     ]
-    .spacing(10)
+    .spacing(10.0 * scale)
     .align_y(iced::Alignment::Center);
 
     let info_panel = iced::widget::column![
         text(weather_temp)
-            .size(76)
+            .size(76.0 * scale)
             .color(iced::Color::from_rgb8(250, 204, 21)),
         weather_condition_row,
         sun_row,
         info_divider,
         text(cpu_temp)
-            .size(48)
+            .size(48.0 * scale)
             .color(iced::Color::from_rgb8(56, 189, 248)),
-        text(network_status).size(42).color(network_color),
+        text(network_status).size(42.0 * scale).color(network_color),
     ]
-    .spacing(24)
+    .spacing(24.0 * scale)
     .align_x(iced::Alignment::Center);
 
     iced::widget::mouse_area(
@@ -272,7 +298,10 @@ fn subscription(_state: &RaspiClock) -> iced::Subscription<Message> {
 
     let burn_in = iced::time::every(Duration::from_secs(5 * 60)).map(|_| Message::ShiftDisplay);
 
-    iced::Subscription::batch([clock, weather, burn_in])
+    let window_resize = iced::window::resize_events()
+        .map(|(_id, size)| Message::WindowResized(size.width, size.height));
+
+    iced::Subscription::batch([clock, weather, burn_in, window_resize])
 }
 
 fn cpu_temperature() -> Option<f32> {
