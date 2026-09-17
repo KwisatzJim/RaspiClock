@@ -32,6 +32,7 @@ struct WeatherResponse {
 struct CurrentWeather {
     temperature_2m: f32,
     weather_code: u8,
+    is_day: u8,
 
     #[serde(skip)]
     sunrise: Option<String>,
@@ -185,7 +186,7 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
     let (weather_temp, weather_condition, weather_icon) = match &state.weather {
         Some(weather) => (
             format!("{:.0}°F", weather.temperature_2m),
-            weather_description(weather.weather_code).to_string(),
+            weather_description(weather.weather_code, weather.is_day).to_string(),
             weather_icon(weather.weather_code),
         ),
         None => ("--°F".to_string(), "Weather unavailable".to_string(), "?"),
@@ -348,7 +349,7 @@ fn active_network_interface() -> Option<String> {
 
 async fn fetch_weather(config: &Config) -> Option<CurrentWeather> {
     let url = format!(
-        "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m,weather_code&daily=sunrise,sunset&temperature_unit=fahrenheit&timezone={}",
+        "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current=temperature_2m,weather_code,is_day&daily=sunrise,sunset&temperature_unit=fahrenheit&timezone={}",
         config.latitude, config.longitude, config.timezone,
     );
 
@@ -369,10 +370,22 @@ async fn fetch_weather(config: &Config) -> Option<CurrentWeather> {
     Some(current)
 }
 
-fn weather_description(code: u8) -> &'static str {
+fn weather_description(code: u8, is_day: u8) -> &'static str {
     match code {
-        0 => "Clear",
-        1 => "Mostly Clear",
+        0 => {
+            if is_day == 1 {
+                "Sunny"
+            } else {
+                "Clear"
+            }
+        }
+        1 => {
+            if is_day == 1 {
+                "Mostly Sunny"
+            } else {
+                "Mostly Clear"
+            }
+        }
         2 => "Partly Cloudy",
         3 => "Overcast",
         45 | 48 => "Fog",
