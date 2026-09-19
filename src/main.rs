@@ -187,7 +187,7 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
         Some(weather) => (
             format!("{:.0}°F", weather.temperature_2m),
             weather_description(weather.weather_code, weather.is_day).to_string(),
-            weather_icon(weather.weather_code),
+            weather_icon(weather.weather_code, weather.is_day),
         ),
         None => ("--°F".to_string(), "Weather unavailable".to_string(), "?"),
     };
@@ -403,10 +403,22 @@ fn weather_description(code: u8, is_day: u8) -> &'static str {
     }
 }
 
-fn weather_icon(code: u8) -> &'static str {
+fn weather_icon(code: u8, is_day: u8) -> &'static str {
     match code {
-        0 => "assets/weather/clear.svg",
-        1 => "assets/weather/mostly-clear.svg",
+        0 => {
+            if is_day == 1 {
+                "assets/weather/clear.svg"
+            } else {
+                "assets/weather/clear-night.svg"
+            }
+        }
+        1 => {
+            if is_day == 1 {
+                "assets/weather/mostly-clear.svg"
+            } else {
+                "assets/weather/mostly-clear-night.svg"
+            }
+        }
         2 => "assets/weather/partly-cloudy.svg",
         3 => "assets/weather/cloudy.svg",
         45 | 48 => "assets/weather/fog.svg",
