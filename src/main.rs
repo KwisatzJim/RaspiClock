@@ -49,6 +49,7 @@ struct DailyWeather {
 
 struct RaspiClock {
     weather: Option<CurrentWeather>,
+    weather_updated_at: Option<chrono::DateTime<chrono::Local>>,
     config: Option<Config>,
     display_position: u8,
     window_width: f32,
@@ -73,6 +74,7 @@ fn boot() -> (RaspiClock, iced::Task<Message>) {
     (
         RaspiClock {
             weather,
+            weather_updated_at: None,
             config,
             display_position: 0,
             window_width: 1280.0,
@@ -117,6 +119,7 @@ fn update(state: &mut RaspiClock, message: Message) -> iced::Task<Message> {
         Message::WeatherUpdated(weather) => {
             if let Some(weather) = weather {
                 state.weather = Some(weather);
+                state.weather_updated_at = Some(chrono::Local::now());
             }
         }
     }
@@ -192,6 +195,8 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
         None => ("--°F".to_string(), "Weather unavailable".to_string(), "?"),
     };
 
+    let weather_age = state.weather_updated_at.as_ref().and_then(weather_age_text);
+
     let (sunrise, sunset) = match &state.weather {
         Some(weather) => (
             weather
@@ -254,12 +259,21 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
     .spacing(10.0 * scale)
     .align_y(iced::Alignment::Center);
 
+    let weather_age_display: iced::Element<'_, Message> = match weather_age {
+        Some(age) => text(age)
+            .size(24.0 * scale)
+            .color(iced::Color::from_rgb8(148, 163, 184))
+            .into(),
+        None => iced::widget::Space::new().into(),
+    };
+
     let info_panel = iced::widget::column![
         text(weather_temp)
             .size(76.0 * scale)
             .color(iced::Color::from_rgb8(250, 204, 21)),
         weather_condition_row,
         sun_row,
+        weather_age_display,
         info_divider,
         text(cpu_temp)
             .size(48.0 * scale)
@@ -439,4 +453,23 @@ fn format_sun_time(value: &str) -> Option<String> {
     let datetime = chrono::NaiveDateTime::parse_from_str(value, "%Y-%m-%dT%H:%M").ok()?;
 
     Some(datetime.format("%-I:%M %p").to_string())
+}
+
+fn weather_age_minutes(updated_at: &chrono::DateTime<chrono::Local>) -> i64 {
+    chrono::Local::now()
+        .signed_duration_since(*updated_at)
+        .num_minutes()
+}
+
+fn weather_age_text(updated_at: &chrono::DateTime<chrono::Local>) -> Option<String> {
+    let minutes = weather_age_minutes(updated_at);
+
+    if minutes < 30 {
+        None
+    } else if minutes < 120 {
+        Some(format!("Updated {minutes}m ago"))
+    } else {
+        let hours = minutes / 60;
+        Some(format!("Weather data {hours}h old"))
+    }
 }
