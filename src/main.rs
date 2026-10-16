@@ -423,11 +423,11 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
     if ethernet_connected {
         network_footer = network_footer.push(
             iced::widget::svg(icon_handle("assets/status/ethernet.svg"))
-                .width(48.0 * scale)
-                .height(48.0 * scale),
+                .width(64.0 * scale)
+                .height(64.0 * scale),
         );
     }
-    let network_footer = network_footer.push(text(network_status).size(44.0 * scale).color(
+    let network_footer = network_footer.push(text(network_status).size(56.0 * scale).color(
         if state.system.interface.is_some() {
             iced::Color::from_rgb8(203, 213, 225)
         } else {
@@ -437,13 +437,13 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
 
     let footer = iced::widget::row![
         iced::widget::svg(icon_handle("assets/status/pi.svg"))
-            .width(48.0 * scale)
-            .height(48.0 * scale),
+            .width(64.0 * scale)
+            .height(64.0 * scale),
         text(cpu_temp)
-            .size(44.0 * scale)
+            .size(56.0 * scale)
             .color(iced::Color::from_rgb8(203, 213, 225)),
         text("•")
-            .size(44.0 * scale)
+            .size(56.0 * scale)
             .color(iced::Color::from_rgb8(71, 85, 105)),
         network_footer,
     ]

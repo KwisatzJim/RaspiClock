@@ -34,7 +34,7 @@ The dashboard is designed around the current 1280×720 landscape display and sca
 - A 60/40 split places the large clock on the left and weather on the right.
 - Time digits are 170 px at native resolution, with 40 px AM/PM and 64 px weekday and 56 px date text.
 - The weather icon sits beside the temperature, with 56 px conditions and 38 px sunrise/sunset times below, paired with 48 px yellow sunrise and orange sunset SVG icons. The condition has a reserved two-line area for longer descriptions.
-- A 44 px footer shows CPU temperature beside a 48 px board SVG and wired connection status beside a 48 px Ethernet SVG. Wi-Fi and other connection types retain their text labels.
+- A 56 px footer shows CPU temperature beside a 64 px board SVG and wired connection status beside a 64 px Ethernet SVG. Wi-Fi and other connection types retain their text labels.
 - Loading, configuration errors, failed weather updates, and stale-data notices use a reserved area below the weather. Successful updates show no message, and warnings do not move the surrounding content.
 
 The panels share an uninterrupted dark background. A small periodic position shift remains enabled.
