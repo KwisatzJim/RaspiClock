@@ -331,24 +331,37 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
 
     let clock_panel = iced::widget::column![
         time_row,
-        text(current_day).size(64.0 * scale),
-        text(current_date).size(56.0 * scale),
+        text(current_day).size(80.0 * scale),
+        text(current_date).size(62.0 * scale),
     ]
     .spacing(12.0 * scale)
     .align_x(iced::Alignment::Center);
 
-    let sun_row = iced::widget::row![
+    let sunrise_row = iced::widget::row![
         iced::widget::svg(icon_handle("assets/weather/sunrise.svg"))
-            .width(48.0 * scale)
-            .height(48.0 * scale),
-        text(sunrise).size(38.0 * scale),
-        iced::widget::svg(icon_handle("assets/weather/sunset.svg"))
-            .width(48.0 * scale)
-            .height(48.0 * scale),
-        text(sunset).size(38.0 * scale),
+            .width(64.0 * scale)
+            .height(64.0 * scale),
+        text(sunrise).size(48.0 * scale),
     ]
-    .spacing(10.0 * scale)
+    .spacing(12.0 * scale)
     .align_y(iced::Alignment::Center);
+
+    let sunset_row = iced::widget::row![
+        text(sunset).size(48.0 * scale),
+        iced::widget::svg(icon_handle("assets/weather/sunset.svg"))
+            .width(64.0 * scale)
+            .height(64.0 * scale),
+    ]
+    .spacing(12.0 * scale)
+    .align_y(iced::Alignment::Center);
+
+    let sun_rows = iced::widget::column![
+        iced::widget::container(sunrise_row)
+            .padding(iced::Padding::ZERO.left(16.0 * scale))
+            .align_left(iced::Length::Fill),
+        iced::widget::container(sunset_row).align_right(iced::Length::Fill),
+    ]
+    .spacing(12.0 * scale);
 
     let temperature_row = iced::widget::row![
         iced::widget::svg(icon_handle(weather_icon))
@@ -398,7 +411,7 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
                 .color(iced::Color::from_rgb8(203, 213, 225)),
         )
         .center_y(148.0 * scale),
-        sun_row,
+        sun_rows,
         weather_status,
     ]
     .spacing(24.0 * scale)
@@ -435,19 +448,26 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
         },
     ));
 
-    let footer = iced::widget::row![
+    let cpu_footer = iced::widget::row![
         iced::widget::svg(icon_handle("assets/status/pi.svg"))
             .width(64.0 * scale)
             .height(64.0 * scale),
         text(cpu_temp)
             .size(56.0 * scale)
             .color(iced::Color::from_rgb8(203, 213, 225)),
-        text("•")
-            .size(56.0 * scale)
-            .color(iced::Color::from_rgb8(71, 85, 105)),
-        network_footer,
     ]
     .spacing(14.0 * scale)
+    .align_y(iced::Alignment::Center);
+
+    let footer = iced::widget::row![
+        iced::widget::container(cpu_footer)
+            .width(iced::Length::FillPortion(3))
+            .center_x(iced::Length::Fill),
+        iced::widget::container(network_footer)
+            .width(iced::Length::FillPortion(2))
+            .center_x(iced::Length::Fill),
+    ]
+    .width(iced::Length::Fill)
     .align_y(iced::Alignment::Center);
 
     iced::widget::mouse_area(
