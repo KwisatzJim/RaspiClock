@@ -1,7 +1,8 @@
 # RaspiClock location configuration
 #
 # Replace these values with the latitude, longitude,
-# and IANA timezone for your location.
+# and IANA timezone for weather and sun times at your location.
+# The clock uses the OS timezone; set it with timedatectl as well.
 
 latitude = 30.27
 longitude = -97.74
