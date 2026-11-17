@@ -76,6 +76,7 @@ struct DailyWeather {
 struct RaspiClock {
     weather: Option<CurrentWeather>,
     weather_updated_at: Option<chrono::DateTime<chrono::Local>>,
+    weather_updated_instant: Option<Instant>,
     config: Option<Config>,
     config_error: Option<String>,
     weather_error: Option<String>,
@@ -115,6 +116,7 @@ fn boot() -> (RaspiClock, iced::Task<Message>) {
         RaspiClock {
             weather,
             weather_updated_at: None,
+            weather_updated_instant: None,
             config,
             config_error,
             weather_error: None,
@@ -204,6 +206,7 @@ fn update(state: &mut RaspiClock, message: Message) -> iced::Task<Message> {
                 Ok(weather) => {
                     state.weather = Some(weather);
                     state.weather_updated_at = Some(Local::now());
+                    state.weather_updated_instant = Some(Instant::now());
                     state.weather_error = None;
                     state.weather_failures = 0;
                     state.next_weather = Instant::now() + Duration::from_secs(15 * 60);
@@ -302,21 +305,25 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
     };
 
     let weather_age = state
-        .weather_updated_at
+        .weather_updated_instant
+        .and_then(|updated| weather_age_text(updated.elapsed()));
+
+    let today = state
+        .config
         .as_ref()
-        .and_then(|updated| weather_age_text(updated, Local::now()));
+        .and_then(|config| weather_date(&config.timezone, now.with_timezone(&chrono::Utc)));
 
     let (sunrise, sunset) = match &state.weather {
         Some(weather) => (
             weather
                 .sunrise
                 .as_deref()
-                .and_then(format_sun_time)
+                .and_then(|value| today.and_then(|date| format_sun_time(value, date)))
                 .unwrap_or_else(|| "--".to_string()),
             weather
                 .sunset
                 .as_deref()
-                .and_then(format_sun_time)
+                .and_then(|value| today.and_then(|date| format_sun_time(value, date)))
                 .unwrap_or_else(|| "--".to_string()),
         ),
         None => ("--".to_string(), "--".to_string()),
@@ -331,7 +338,7 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
 
     let clock_panel = iced::widget::column![
         time_row,
-        text(current_day).size(80.0 * scale),
+        text(current_day).size(90.0 * scale),
         text(current_date).size(62.0 * scale),
     ]
     .spacing(12.0 * scale)
@@ -341,13 +348,13 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
         iced::widget::svg(icon_handle("assets/weather/sunrise.svg"))
             .width(64.0 * scale)
             .height(64.0 * scale),
-        text(sunrise).size(48.0 * scale),
+        text(sunrise).size(50.0 * scale),
     ]
     .spacing(12.0 * scale)
     .align_y(iced::Alignment::Center);
 
     let sunset_row = iced::widget::row![
-        text(sunset).size(48.0 * scale),
+        text(sunset).size(50.0 * scale),
         iced::widget::svg(icon_handle("assets/weather/sunset.svg"))
             .width(64.0 * scale)
             .height(64.0 * scale),
@@ -398,14 +405,14 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
         .spacing(6.0 * scale)
         .align_x(iced::Alignment::Center),
     )
-    .height(80.0 * scale)
+    .height(56.0 * scale)
     .center_x(iced::Length::Fill);
 
     let info_panel = iced::widget::column![
         temperature_row,
         iced::widget::container(
             text(weather_condition)
-                .size(56.0 * scale)
+                .size(60.0 * scale)
                 .width(iced::Length::Fill)
                 .align_x(iced::Alignment::Center)
                 .color(iced::Color::from_rgb8(203, 213, 225)),
@@ -453,7 +460,7 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
             .width(64.0 * scale)
             .height(64.0 * scale),
         text(cpu_temp)
-            .size(56.0 * scale)
+            .size(65.0 * scale)
             .color(iced::Color::from_rgb8(203, 213, 225)),
     ]
     .spacing(14.0 * scale)
@@ -659,17 +666,22 @@ fn weather_icon(code: u8, is_day: u8) -> &'static str {
     }
 }
 
-fn format_sun_time(value: &str) -> Option<String> {
+fn weather_date(timezone: &str, now: chrono::DateTime<chrono::Utc>) -> Option<chrono::NaiveDate> {
+    let timezone: chrono_tz::Tz = timezone.parse().ok()?;
+    Some(now.with_timezone(&timezone).date_naive())
+}
+
+fn format_sun_time(value: &str, today: chrono::NaiveDate) -> Option<String> {
     let datetime = chrono::NaiveDateTime::parse_from_str(value, "%Y-%m-%dT%H:%M").ok()?;
 
+    if datetime.date() != today {
+        return None;
+    }
     Some(datetime.format("%-I:%M %p").to_string())
 }
 
-fn weather_age_text(
-    updated_at: &chrono::DateTime<Local>,
-    now: chrono::DateTime<Local>,
-) -> Option<String> {
-    let minutes = now.signed_duration_since(*updated_at).num_minutes().max(0);
+fn weather_age_text(age: Duration) -> Option<String> {
+    let minutes = age.as_secs() / 60;
     if minutes < 30 {
         None
     } else if minutes < 120 {
@@ -763,6 +775,7 @@ mod tests {
 
     #[test]
     fn decodes_weather_and_handles_missing_sun_times() {
+        let today = chrono::NaiveDate::from_ymd_opt(2026, 10, 15).unwrap();
         let fixture = r#"current = { temperature_2m = 72.5, weather_code = 0, is_day = 1 }
             [daily]
             sunrise = ["2026-10-15T07:30"]
@@ -771,7 +784,7 @@ mod tests {
         assert_eq!(weather.temperature_2m, 72.5);
         assert_eq!(weather.sunrise.as_deref(), Some("2026-10-15T07:30"));
         assert_eq!(
-            format_sun_time(weather.sunset.as_deref().unwrap()).as_deref(),
+            format_sun_time(weather.sunset.as_deref().unwrap(), today).as_deref(),
             Some("6:45 PM")
         );
         let empty = fixture
@@ -782,7 +795,40 @@ mod tests {
                 .sunrise
                 .is_none()
         );
-        assert!(format_sun_time("invalid").is_none());
+        assert!(format_sun_time("invalid", today).is_none());
+    }
+
+    #[test]
+    fn sun_times_only_display_for_the_current_weather_date() {
+        let today = chrono::NaiveDate::from_ymd_opt(2026, 11, 17).unwrap();
+        assert_eq!(
+            format_sun_time("2026-11-17T06:45", today).as_deref(),
+            Some("6:45 AM")
+        );
+        assert_eq!(
+            format_sun_time("2026-11-17T17:30", today).as_deref(),
+            Some("5:30 PM")
+        );
+        assert!(format_sun_time("2026-11-16T06:45", today).is_none());
+        assert!(format_sun_time("2026-11-18T06:45", today).is_none());
+        assert!(format_sun_time("invalid", today).is_none());
+    }
+
+    #[test]
+    fn weather_date_uses_configured_timezone_and_daylight_saving() {
+        for (instant, zone, expected) in [
+            ("2026-11-17T05:59:59Z", "America/Chicago", "2026-11-16"),
+            ("2026-11-17T06:00:00Z", "America/Chicago", "2026-11-17"),
+            ("2026-07-17T04:59:59Z", "America/Chicago", "2026-07-16"),
+            ("2026-07-17T05:00:00Z", "America/Chicago", "2026-07-17"),
+            ("2026-11-17T15:00:00Z", "Asia/Tokyo", "2026-11-18"),
+        ] {
+            let now = chrono::DateTime::parse_from_rfc3339(instant)
+                .unwrap()
+                .with_timezone(&chrono::Utc);
+            assert_eq!(weather_date(zone, now).unwrap().to_string(), expected);
+        }
+        assert!(weather_date("NoSuch/Zone", chrono::Utc::now()).is_none());
     }
 
     #[test]
@@ -794,17 +840,16 @@ mod tests {
     }
 
     #[test]
-    fn stale_weather_boundaries_and_clock_correction() {
-        let now = Local::now();
+    fn stale_weather_boundaries() {
         for (minutes, expected) in [
-            (-1, None),
+            (0, None),
             (29, None),
             (30, Some("Updated 30m ago")),
             (119, Some("Updated 119m ago")),
             (120, Some("Weather data 2h old")),
         ] {
             assert_eq!(
-                weather_age_text(&(now - chrono::Duration::minutes(minutes)), now).as_deref(),
+                weather_age_text(Duration::from_secs(minutes * 60)).as_deref(),
                 expected
             );
         }
