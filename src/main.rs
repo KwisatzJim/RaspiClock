@@ -412,12 +412,12 @@ fn view(state: &RaspiClock) -> iced::Element<'_, Message> {
         temperature_row,
         iced::widget::container(
             text(weather_condition)
-                .size(60.0 * scale)
+                .size(88.0 * scale)
                 .width(iced::Length::Fill)
                 .align_x(iced::Alignment::Center)
                 .color(iced::Color::from_rgb8(203, 213, 225)),
         )
-        .center_y(148.0 * scale),
+        .center_y(212.0 * scale),
         sun_rows,
         weather_status,
     ]
